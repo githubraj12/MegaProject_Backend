@@ -1,5 +1,3 @@
-
-
 const asyncHandler= (fn) => async(req,res,next ) =>{
 try {
     await fn(req,res,next)
@@ -12,7 +10,7 @@ try {
 }
 }
 
-
+export default asyncHandler;
 
 // const asyncHandler =(requestHander)=>{
 //     (req,res,next)=>{
