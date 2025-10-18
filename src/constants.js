@@ -1,2 +1,2 @@
 
-export const DB_NAME = "MegaProjectYt-Backend";
+export const DB_NAME = "megaprojectytbackend";
