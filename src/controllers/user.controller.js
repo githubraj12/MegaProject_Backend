@@ -44,11 +44,15 @@ const registerUser = asyncHandler( async (req, res)=>{
     //     throw new ApiError(400, 'All fields are required');
     // }
 
+
+    // here we check the field are empty or not 
     if([username,fullname,email,password].some(
         (field)=>field?.trim() === "")){
             throw new ApiError(400, "All fields are required")
         }
-    
+ 
+        
+        // here we find the user based on email or username, 
 const existingUser= await User.findOne({
     $or:[{email},{username}]
 });
@@ -59,9 +63,13 @@ if(existingUser){
 
 console.log(req.files)
 
+
+// here take the path of the avatar file 
 const avatarLocalPath= req.files?.avatar[0]?.path;
 let coverImageLocalPath;
 
+
+// here we check for coverimage , if we find coverImage then only take their file path
 if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
     coverImageLocalPath=req.files.coverImage[0].path;
 }
@@ -71,6 +79,8 @@ if(!avatarLocalPath){
 }
 
 
+
+// here we upload avatar and converImage
 const avatar = await uploadOnCloudinary(avatarLocalPath);
 const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
@@ -79,6 +89,8 @@ if(!avatar){
     throw new ApiError(400, 'Avatar image is required')
 }
 
+
+// here we create the user and take this user into mongodb database 
 const user = await User.create({
     username: username.toLowerCase(),
     email,
@@ -88,6 +100,8 @@ const user = await User.create({
     coverImage:coverImage?.url || "",
 });
 
+
+// here we get user without password and refresh token field 
 const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
 )
@@ -123,6 +137,8 @@ const loginUser = (async (req,res)=>{
 
     const {username, email, password} = req.body;
 
+
+// this condition required both email and username to fill 
     if(!username && !email){
         throw new ApiError(400, 'username or email is required ')
     }
@@ -142,6 +158,8 @@ const loginUser = (async (req,res)=>{
     throw new ApiError(401, " invalid credentials ")
    }
 
+
+   // here we get tokens 
     const {accessToken, refreshToken} = await generateAccesssAndRefreshToken(user._id);
 
     const loggedUser = await User.findOne(user._id).select(
@@ -149,6 +167,8 @@ const loginUser = (async (req,res)=>{
     )
 
 
+    // this otions is required so that no one can modify cookies in frontend 
+    // this can only happend by Backend developer
     const options = {
         httpOnly:true,
         secure:true
@@ -244,8 +264,37 @@ const logoutUser = asyncHandler(async (req,res)=>{
 
 
 
+    const changeCurrentPassword = asyncHandler(async (req,res)=>{
+
+        const {oldPassword, newPassword} = req.body;
+
+       const user = await User.findById(req.user?._id)
+
+       const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+
+       if(!isPasswordCorrect){
+        throw new ApiError(401, " Invalid old Password")
+       }
+
+       user.password = newPassword;
+
+       await user.save({validateBeforeSave:true})
+
+       return res.status(200).json(
+        new ApiResponse(200, " Password changed successfully")
+       )
+    })
+
+
+    const getCurrentUser = asyncHandler(async (req,res)=>{
+        return res.status(200).json(200, req.user, "current user fetched successfully"
+        )
+    })
+
+
 
 export {
     registerUser,loginUser,
-    logoutUser,refreshAccessToken
+    logoutUser,refreshAccessToken,changeCurrentPassword,
+    getCurrentUser
 }

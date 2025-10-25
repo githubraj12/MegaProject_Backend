@@ -47,6 +47,8 @@ const userSchema = new Schema({
 }, {timestamps:true}
 )
 
+
+// here we encrypt the password
 userSchema.pre('save',async function(next){
     if(!this.isModified('password') ) return next();
 
@@ -54,11 +56,14 @@ userSchema.pre('save',async function(next){
     next();
 })
 
-
+// here we check the password given by user with already encrypted password in database
 userSchema.methods.isPasswordCorrect = async function(password){
     return await bcrypt.compare(password, this.password)
 }
 
+
+
+// here we generate access token
 userSchema.methods.generateAccessToken = function(){
     return jwt.sign(
         {
@@ -77,6 +82,7 @@ userSchema.methods.generateAccessToken = function(){
 
 
 
+// here we generate refresh token 
 userSchema.methods.generateRefreshToken = function(){
     return jwt.sign(
         {
