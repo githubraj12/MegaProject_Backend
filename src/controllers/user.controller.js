@@ -352,7 +352,7 @@ const logoutUser = asyncHandler(async (req,res)=>{
 
 
 
-        const updateUserCoverImage = asyncHandler(async (req,res)=>{
+    const updateUserCoverImage = asyncHandler(async (req,res)=>{
 
         const coverImageLocalPath = req.file?.path;
         if(!coverImageLocalPath){
