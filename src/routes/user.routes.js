@@ -29,6 +29,7 @@ router.route("/login").post(loginUser)
 
 // secured routes
 router.route("/logout").post(verifyJWT,logoutUser)
+
 router.route("/refresh-token").post(refreshAccessToken)
 
 router.route("/change-password").post(verifyJWT,changeCurrentPassword)
@@ -41,4 +42,6 @@ router.route("/cover-image").patch(verifyJWT,upload.single("coverImage"), update
 
 router.route("/c/:username").get(verifyJWT,getUserProfile);
 router.route("/history").get(verifyJWT,getUserWatchHistory)
+
+
 export default router;

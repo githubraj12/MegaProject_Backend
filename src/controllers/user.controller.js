@@ -1,7 +1,7 @@
 import {asyncHandler} from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import {User} from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -148,6 +148,8 @@ const loginUser = (async (req,res)=>{
         $or:[{email},{username}]
     })
 
+    // console.log(user.)
+
     if (!user){
         throw new ApiError(400, 'User does not exist')
     }
@@ -202,10 +204,11 @@ const logoutUser = asyncHandler(async (req,res)=>{
         await User.findByIdAndUpdate(
             req.user._id,
             {
-                $set:{
-                    refreshToken:undefined
+                $unset:{
+                    refreshToken:1
                 }
-            }
+            },
+            {new:true}
         )
      const options = {
         httpOnly:true,
@@ -239,6 +242,7 @@ const logoutUser = asyncHandler(async (req,res)=>{
          if(!user){
             throw new ApiError(401,"Invalid refresh token")
          }
+
 
          if(incomingRefreshToken !== decodedToken){
             throw new ApiError(401, " Invalid refresh token")
@@ -288,7 +292,9 @@ const logoutUser = asyncHandler(async (req,res)=>{
 
 
     const getCurrentUser = asyncHandler(async (req,res)=>{
-        return res.status(200).json(200, req.user, "current user fetched successfully"
+        return res.status(200).json(
+            
+            new ApiResponse(200, req.user, "current user fetched successfully")
         )
     })
 
@@ -313,7 +319,6 @@ const logoutUser = asyncHandler(async (req,res)=>{
             }
         ).select("-password");
 
-
         return res.status(200).json(
             new ApiResponse(200, updateUser, " User details updated successfully")
         )
@@ -326,6 +331,14 @@ const logoutUser = asyncHandler(async (req,res)=>{
         if(!avatarLocalPath){
             throw new ApiError(400, " Avatar image is required")   
         }
+        // delete old avatar from cloudinary
+        const user = await User.findById(req.user?._id);
+        if(!user){
+            throw new ApiError(404, " User not found");
+        }
+        const avatarUrl = user.avatar;
+        const oldAvatarId = avatarUrl.split("/").pop().split(".")[0];
+        await deleteFromCloudinary(oldAvatarId)
 
         const avatar = await uploadOnCloudinary(avatarLocalPath);
 
@@ -358,6 +371,17 @@ const logoutUser = asyncHandler(async (req,res)=>{
         if(!coverImageLocalPath){
             throw new ApiError(400, "Cover image is required")   
         }
+
+        // delete old coverImage from cloudinary
+        const user = await User.findById(req.user?._id);
+        if(!user){
+            throw new ApiError(404, " User not found");
+        }
+        const coverImageUrl = user.avatar;
+        const oldCoverImageId = coverImageUrl.split("/").pop().split(".")[0];
+        await deleteFromCloudinary(oldCoverImageId)
+
+
 
         const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
@@ -402,14 +426,14 @@ const logoutUser = asyncHandler(async (req,res)=>{
              {   
                 $lookup:{
                     from:"subscriptions",
-                    localfield:"_id",
+                    localField:"_id",
                     foreignField:"channel",
                     as:"subscribers"
                 }},
                 {
                     $lookup:{
                         from:"subscriptions",
-                        localfield:"_id",
+                        localField:"_id",
                         foreignField:"subscriber",
                         as:"subscribedTo"
                     }
@@ -462,7 +486,7 @@ const logoutUser = asyncHandler(async (req,res)=>{
         const user = await User.aggregate([
             { 
                 $match:{
-                    _id: new mongoose.Types.ObjectId(req.user.id)
+                    _id: new mongoose.ObjectId(req.user.id)
                 }
             },{
                 $lookup:{
@@ -500,7 +524,7 @@ const logoutUser = asyncHandler(async (req,res)=>{
             }
         ])
 
-        if(!watchHistory.length){
+        if(!user.length){
             throw new ApiError(404, " Watch history not found")
         }
 

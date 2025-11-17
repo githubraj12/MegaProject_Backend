@@ -27,14 +27,17 @@ const uploadOnCloudinary = async (localfilepath)=>{
 
 }
 
-// cloudinary.uploader
-//        .upload(
-//            'https://res.cloudinary.com/demo/image/upload/getting-started/shoes.jpg',
-//             { public_id: 'shoes'},
-//             function(error,result) {console.log(result);}
-//        )
 
+const deleteFromCloudinary = async( publicId)=>{
+    try{
+        await cloudinary.uploader.destroy(publicId)
+
+    }catch(error){
+        console.log("Error while deleting image from cloudinary", error)
+    }
+}
 
 export {
-    uploadOnCloudinary
+    uploadOnCloudinary,
+    deleteFromCloudinary
 }
